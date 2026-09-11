@@ -1,0 +1,59 @@
+---
+- name: Check whether kubeadm init has already run
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_init_done
+
+- name: Run kubeadm init
+  command: >
+    kubeadm init
+    --pod-network-cidr={{ pod_network_cidr }}
+    --apiserver-advertise-address={{ ansible_default_ipv4.address }}
+    --node-name={{ inventory_hostname }}
+  when: not kubeadm_init_done.stat.exists
+
+- name: "Create .kube directory for {{ ansible_user }}"
+  file:
+    path: "/home/{{ ansible_user }}/.kube"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Copy admin.conf as kubeconfig
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{ ansible_user }}/.kube/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0600"
+    remote_src: true
+
+- name: Apply Calico CNI manifest
+  become_user: "{{ ansible_user }}"
+  command: "kubectl --kubeconfig=/home/{{ ansible_user }}/.kube/config apply -f {{ calico_manifest_url }}"
+  register: calico_apply
+  changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
+
+- name: Generate kubeadm join command
+  command: kubeadm token create --print-join-command
+  register: kubeadm_join_cmd
+  changed_when: false
+
+- name: Save join command on the control plane
+  copy:
+    dest: "{{ join_command_file }}"
+    content: "{{ kubeadm_join_cmd.stdout }}\n"
+    mode: "0700"
+
+- name: Fetch join command to the local (control) machine
+  fetch:
+    src: "{{ join_command_file }}"
+    dest: "{{ playbook_dir }}/../.generated/kubeadm-join.sh"
+    flat: true
+
+- name: Apply NVIDIA device plugin (recommended after GPU workers have joined)
+  become_user: "{{ ansible_user }}"
+  command: "kubectl --kubeconfig=/home/{{ ansible_user }}/.kube/config apply -f {{ nvidia_device_plugin_manifest_url }}"
+  register: nvdp_apply
+  changed_when: "'created' in nvdp_apply.stdout or 'configured' in nvdp_apply.stdout"

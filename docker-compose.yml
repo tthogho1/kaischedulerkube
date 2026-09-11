@@ -1,0 +1,13 @@
+services:
+  runaikube:
+    build: .
+    image: runaikube-tools
+    working_dir: /workspace
+    environment:
+      - AWS_PROFILE=k8s-handson-tf
+    volumes:
+      - .:/workspace
+      - ${USERPROFILE}/.aws:/root/.aws:ro
+      - ${USERPROFILE}/.ssh:/root/.ssh-host:ro
+    tty: true
+    stdin_open: true

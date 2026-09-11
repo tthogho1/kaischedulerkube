@@ -1,0 +1,52 @@
+---
+# Installing the Run:ai control plane requires tenant-specific
+# values.yaml / pull secret / license information provided by Run:ai.
+# This role only scaffolds Helm setup and the install steps.
+# Set the actual chart name, repository URL, and values according to
+# Run:ai's documentation/support, in
+# roles/runai_control_plane/files/control-plane-values.yaml.
+
+- name: Skip if Run:ai install is not enabled
+  meta: end_play
+  when: not runai_install_enabled
+
+- name: Check whether Helm is already installed
+  command: helm version --short
+  register: helm_check
+  failed_when: false
+  changed_when: false
+
+- name: Download Helm installer
+  get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: /tmp/get-helm-3.sh
+    mode: "0700"
+  when: helm_check.rc != 0
+
+- name: Install Helm
+  command: /tmp/get-helm-3.sh
+  when: helm_check.rc != 0
+
+- name: "Add Run:ai Helm repository (replace with the actual repository URL)"
+  command: helm repo add runai-backend https://runai.jfrog.io/artifactory/cp-charts-prod
+  register: helm_repo_add
+  changed_when: "'has been added' in helm_repo_add.stdout"
+  failed_when: false
+
+- name: Update Helm repositories
+  command: helm repo update
+  changed_when: false
+
+- name: Place the control-plane values file
+  copy:
+    src: "{{ runai_control_plane_values_file }}"
+    dest: /tmp/runai-control-plane-values.yaml
+    mode: "0600"
+
+- name: "Install Run:ai control plane via Helm (edit values beforehand)"
+  command: >
+    helm upgrade --install runai-backend runai-backend/control-plane
+    --namespace runai-backend --create-namespace
+    -f /tmp/runai-control-plane-values.yaml
+  register: runai_cp_install
+  changed_when: true

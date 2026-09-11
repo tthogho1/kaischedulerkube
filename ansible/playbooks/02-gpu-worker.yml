@@ -1,0 +1,9 @@
+---
+- name: Set up GPU workers
+  hosts: gpu_workers
+  become: true
+  roles:
+    - common
+    - k8s_common
+    - nvidia_gpu
+    - k8s_worker_join

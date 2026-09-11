@@ -1,0 +1,5 @@
+.git
+.terraform
+terraform/.terraform
+terraform/terraform.tfstate*
+ansible/.generated

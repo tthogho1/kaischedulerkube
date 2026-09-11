@@ -1,0 +1,40 @@
+# Build/run environment for scripts/*.sh: terraform + ansible + aws cli + jq + ssh.
+FROM ubuntu:22.04
+
+ARG TERRAFORM_VERSION=1.9.8
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl \
+      unzip \
+      git \
+      jq \
+      openssh-client \
+      ca-certificates \
+      python3 \
+      python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ansible
+RUN pip3 install --no-cache-dir ansible
+
+# Terraform
+RUN curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip \
+    && unzip /tmp/terraform.zip -d /usr/local/bin \
+    && rm /tmp/terraform.zip \
+    && terraform version
+
+# AWS CLI v2
+RUN curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip \
+    && unzip -q /tmp/awscliv2.zip -d /tmp \
+    && /tmp/aws/install \
+    && rm -rf /tmp/awscliv2.zip /tmp/aws \
+    && aws --version
+
+WORKDIR /workspace
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["bash"]

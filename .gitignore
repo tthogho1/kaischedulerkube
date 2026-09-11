@@ -1,0 +1,26 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+terraform/*.tfplan
+terraform/crash.log
+terraform/crash.*.log
+
+# Ansible generated / runtime
+ansible/inventory/hosts.ini
+ansible/.generated/
+
+# Real Run:ai cluster-join command (contains tenant secrets)
+ansible/roles/runai_gpu_worker/files/cluster-install-command.sh
+
+# SSH keys, if ever placed inside the repo
+*.pem
+id_rsa
+id_rsa.pub
+*.ppk
+
+# OS
+.DS_Store
+Thumbs.db

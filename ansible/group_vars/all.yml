@@ -1,0 +1,18 @@
+---
+# Kubernetes
+kubernetes_version: "1.29"
+kubernetes_apt_version: "1.29.*"
+pod_network_cidr: "192.168.0.0/16"
+calico_manifest_url: "https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/calico.yaml"
+nvidia_device_plugin_manifest_url: "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.15.0/deployments/static/nvidia-device-plugin.yml"
+
+ssh_private_key_file: "~/.ssh/id_rsa"
+join_command_file: "/tmp/{{ project_name | default('runai-k8s') }}-kubeadm-join.sh"
+
+# Run:ai (requires tenant information/license issued by Run:ai)
+# Override the actual values in a vault-managed file such as
+# ansible/group_vars/runai_secrets.yml.
+runai_install_enabled: false
+runai_control_plane_domain: "runai.example.com"      # domain/URL assigned to the Run:ai control plane
+runai_cluster_name: "aws-gpu-cluster"
+runai_control_plane_values_file: "roles/runai_control_plane/files/control-plane-values.yaml"

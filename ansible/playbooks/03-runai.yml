@@ -1,0 +1,17 @@
+---
+# Before running this, set runai_install_enabled: true in group_vars/all.yml
+# and prepare roles/runai_control_plane/files/control-plane-values.yaml and
+# roles/runai_gpu_worker/files/cluster-install-command.sh with your actual
+# tenant information.
+
+- name: Install Run:ai control plane
+  hosts: control_plane
+  become: true
+  roles:
+    - runai_control_plane
+
+- name: Register Run:ai cluster (GPU workers)
+  hosts: control_plane
+  become: true
+  roles:
+    - runai_gpu_worker

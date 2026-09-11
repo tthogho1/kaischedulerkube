@@ -1,0 +1,37 @@
+---
+# Note: apply this role to the control_plane host (it must run from a node
+# that has kubectl/helm access to the cluster; the Run:ai agent is not
+# installed individually on each GPU worker).
+#
+# Installing the Run:ai agent/cluster components onto the Run:ai cluster
+# (the k8s cluster that includes the GPU workers) uses the `runai-cluster`
+# install command (clusterUrl / clusterToken, etc.) issued by the Run:ai
+# control-plane UI. Register the new cluster on the control-plane side
+# first, then save the issued command to
+# roles/runai_gpu_worker/files/cluster-install-command.sh.
+
+- name: Skip if Run:ai install is not enabled
+  meta: end_play
+  when: not runai_install_enabled
+
+- name: Check whether the cluster install script exists (on the Ansible control machine)
+  delegate_to: localhost
+  become: false
+  stat:
+    path: "{{ role_path }}/files/cluster-install-command.sh"
+  register: runai_cluster_script
+
+- name: End with guidance if the cluster install script is missing
+  meta: end_play
+  when: not runai_cluster_script.stat.exists
+
+- name: Copy Run:ai cluster install script to the control plane
+  copy:
+    src: "{{ role_path }}/files/cluster-install-command.sh"
+    dest: /tmp/runai-cluster-install.sh
+    mode: "0700"
+
+- name: Install Run:ai cluster components
+  command: bash /tmp/runai-cluster-install.sh
+  register: runai_cluster_install
+  changed_when: true

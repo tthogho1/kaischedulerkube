@@ -1,0 +1,8 @@
+---
+- name: Set up Kubernetes control plane
+  hosts: control_plane
+  become: true
+  roles:
+    - common
+    - k8s_common
+    - k8s_control_plane

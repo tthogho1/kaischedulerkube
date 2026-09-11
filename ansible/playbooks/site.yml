@@ -1,0 +1,4 @@
+---
+- import_playbook: 01-control-plane.yml
+- import_playbook: 02-gpu-worker.yml
+- import_playbook: 03-runai.yml
