@@ -4,13 +4,25 @@ FROM ubuntu:22.04
 ARG TERRAFORM_VERSION=1.9.8
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Some networks block plain HTTP (port 80) egress. Ubuntu's default sources.list
+# uses http://, and a bare image has no CA store yet to validate https:// either
+# (chicken-and-egg). Bootstrap ca-certificates over https with TLS peer
+# verification off just for that one package - apt's GPG signature check still
+# guarantees its authenticity - then do a normal, fully-verified update/install
+# for everything else.
+RUN sed -i \
+      -e 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g' \
+      -e 's|http://security.ubuntu.com|https://security.ubuntu.com|g' \
+      /etc/apt/sources.list \
+    && apt-get update -o Acquire::https::Verify-Peer=false \
+    && apt-get install -y --no-install-recommends -o Acquire::https::Verify-Peer=false ca-certificates \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
       curl \
       unzip \
       git \
       jq \
       openssh-client \
-      ca-certificates \
       python3 \
       python3-pip \
     && rm -rf /var/lib/apt/lists/*
