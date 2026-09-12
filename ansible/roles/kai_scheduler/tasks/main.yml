@@ -1,0 +1,106 @@
+---
+# Installs the KAI Scheduler (https://github.com/NVIDIA/KAI-Scheduler) onto the
+# cluster. Unlike Run:ai, KAI Scheduler is fully open source: no tenant,
+# license key, or pull secret is required, so this role installs a working
+# scheduler end to end.
+#
+# Runs on the control plane, since that is the node holding the kubeconfig.
+
+- name: Skip if the KAI Scheduler install is not enabled
+  meta: end_play
+  when: not kai_install_enabled
+
+- name: Check whether Helm is already installed
+  command: helm version --short
+  register: helm_check
+  failed_when: false
+  changed_when: false
+
+- name: Download Helm installer
+  get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: /tmp/get-helm-3.sh
+    mode: "0700"
+  when: helm_check.rc != 0
+
+- name: Install Helm
+  command: /tmp/get-helm-3.sh
+  when: helm_check.rc != 0
+
+- name: Copy ClusterPolicy CRD (nvidia.com/v1)
+  copy:
+    src: nvidia.com_clusterpolicies.yaml
+    dest: /tmp/nvidia.com_clusterpolicies.yaml
+    mode: "0644"
+
+# kai-operator watches ClusterPolicy (owned by the NVIDIA GPU Operator, which
+# this project does not install — drivers/toolkit are set up directly by the
+# nvidia_gpu role instead) and crashes on startup if the CRD is missing. Only
+# the CRD is applied here; no ClusterPolicy resource or GPU Operator controller
+# is installed.
+- name: Apply ClusterPolicy CRD so kai-operator's watch does not crash-loop
+  become_user: "{{ ansible_user }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  command: kubectl apply -f /tmp/nvidia.com_clusterpolicies.yaml
+  register: clusterpolicy_crd_apply
+  changed_when: "'created' in clusterpolicy_crd_apply.stdout or 'configured' in clusterpolicy_crd_apply.stdout"
+
+# The chart is published as an OCI artifact, so no `helm repo add` is needed.
+- name: Install KAI Scheduler via Helm
+  become_user: "{{ ansible_user }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  command: >
+    helm upgrade --install kai-scheduler {{ kai_scheduler_chart }}
+    --namespace {{ kai_scheduler_namespace }} --create-namespace
+    --version {{ kai_scheduler_version }}
+    --set global.gpuSharing={{ kai_gpu_sharing_enabled | bool | lower }}
+    --wait --timeout {{ kai_helm_timeout }}
+  register: kai_install
+  changed_when: true
+
+- name: Wait for the KAI Scheduler deployments to become available
+  become_user: "{{ ansible_user }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  command: >
+    kubectl wait --for=condition=Available deployment --all
+    -n {{ kai_scheduler_namespace }} --timeout={{ kai_helm_timeout }}
+  changed_when: false
+
+- name: Render the default queue manifests
+  template:
+    src: default-queues.yaml.j2
+    dest: /tmp/kai-default-queues.yaml
+    owner: "{{ ansible_user }}"
+    mode: "0644"
+  when: kai_create_default_queues
+
+# Every pod must belong to a leaf queue, otherwise KAI will not schedule it.
+- name: Create the default KAI queues
+  become_user: "{{ ansible_user }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  command: kubectl apply -f /tmp/kai-default-queues.yaml
+  register: kai_queues_apply
+  changed_when: "'created' in kai_queues_apply.stdout or 'configured' in kai_queues_apply.stdout"
+  when: kai_create_default_queues
+
+- name: Create the examples directory
+  file:
+    path: "/home/{{ ansible_user }}/kai-examples"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Place example workloads on the control plane
+  template:
+    src: "{{ item }}.j2"
+    dest: "/home/{{ ansible_user }}/kai-examples/{{ item }}"
+    owner: "{{ ansible_user }}"
+    mode: "0644"
+  loop:
+    - cpu-only-pod.yaml
+    - gpu-pod.yaml

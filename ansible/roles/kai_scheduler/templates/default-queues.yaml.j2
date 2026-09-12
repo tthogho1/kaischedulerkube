@@ -1,0 +1,41 @@
+# Rendered by the kai_scheduler role.
+# quota: 0 + limit: -1 means "no guaranteed quota, unlimited over-quota", i.e.
+# anything submitted to this queue can use whatever the cluster has free.
+apiVersion: scheduling.run.ai/v2
+kind: Queue
+metadata:
+  name: {{ kai_parent_queue_name }}
+spec:
+  resources:
+    cpu:
+      quota: 0
+      limit: -1
+      overQuotaWeight: 1
+    gpu:
+      quota: 0
+      limit: -1
+      overQuotaWeight: 1
+    memory:
+      quota: 0
+      limit: -1
+      overQuotaWeight: 1
+---
+apiVersion: scheduling.run.ai/v2
+kind: Queue
+metadata:
+  name: {{ kai_queue_name }}
+spec:
+  parentQueue: {{ kai_parent_queue_name }}
+  resources:
+    cpu:
+      quota: 0
+      limit: -1
+      overQuotaWeight: 1
+    gpu:
+      quota: 0
+      limit: -1
+      overQuotaWeight: 1
+    memory:
+      quota: 0
+      limit: -1
+      overQuotaWeight: 1

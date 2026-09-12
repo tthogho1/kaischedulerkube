@@ -1,0 +1,12 @@
+---
+# Overridable in ansible/playbooks/group_vars/all.yml.
+kai_install_enabled: true
+kai_scheduler_chart: "oci://ghcr.io/kai-scheduler/kai-scheduler/kai-scheduler"
+kai_scheduler_version: "v0.17.1"
+kai_scheduler_namespace: "kai-scheduler"
+kai_gpu_sharing_enabled: false
+kai_helm_timeout: "10m"
+kai_create_default_queues: true
+kai_parent_queue_name: "default-parent-queue"
+kai_queue_name: "default-queue"
+kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"

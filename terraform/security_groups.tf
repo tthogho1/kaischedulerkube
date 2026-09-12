@@ -36,7 +36,7 @@ resource "aws_security_group_rule" "nodeport_in" {
   protocol          = "tcp"
   cidr_blocks       = [var.ssh_allowed_cidr]
   security_group_id = aws_security_group.k8s.id
-  description       = "NodePort range (Run:ai UI/API, etc.)"
+  description       = "NodePort range (workload services, dashboards, etc.)"
 }
 
 # --- Cluster-internal traffic (self-referencing) ---
@@ -47,7 +47,7 @@ resource "aws_security_group_rule" "self_all_tcp" {
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.k8s.id
   security_group_id        = aws_security_group.k8s.id
-  description               = "cluster internal tcp (etcd, kubelet, calico BGP, scheduler, etc.)"
+  description              = "cluster internal tcp (etcd, kubelet, calico BGP, scheduler, etc.)"
 }
 
 resource "aws_security_group_rule" "self_all_udp" {
@@ -57,7 +57,21 @@ resource "aws_security_group_rule" "self_all_udp" {
   protocol                 = "udp"
   source_security_group_id = aws_security_group.k8s.id
   security_group_id        = aws_security_group.k8s.id
-  description               = "cluster internal udp (calico vxlan, etc.)"
+  description              = "cluster internal udp (calico vxlan, etc.)"
+}
+
+# Calico's default IPPool uses IPIP encapsulation (ipipMode: Always) for
+# cross-node pod traffic, not TCP/UDP. Without this, pod-to-pod traffic
+# between nodes (e.g. the API server on the control plane calling a
+# webhook Service backed by a pod on a worker node) silently times out.
+resource "aws_security_group_rule" "self_ipip" {
+  type                     = "ingress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "4" # IP-in-IP
+  source_security_group_id = aws_security_group.k8s.id
+  security_group_id        = aws_security_group.k8s.id
+  description              = "cluster internal ip-in-ip (calico overlay)"
 }
 
 resource "aws_security_group_rule" "egress_all" {

@@ -5,6 +5,12 @@
     state: present
     update_cache: true
 
+- name: Create /etc/containerd directory
+  file:
+    path: /etc/containerd
+    state: directory
+    mode: "0755"
+
 - name: Generate default containerd config
   shell: containerd config default > /etc/containerd/config.toml
   args:
@@ -16,6 +22,9 @@
     regexp: 'SystemdCgroup = false'
     replace: 'SystemdCgroup = true'
   notify: restart containerd
+
+- name: Apply pending containerd handlers now (must run before kubeadm init)
+  meta: flush_handlers
 
 - name: Start containerd and enable on boot
   systemd:

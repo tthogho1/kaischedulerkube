@@ -9,7 +9,10 @@ cd "${TF_DIR}"
 OUT_JSON="$(terraform output -json)"
 
 CP_IP="$(echo "${OUT_JSON}" | jq -r '.control_plane_public_ip.value')"
-mapfile -t GPU_IPS < <(echo "${OUT_JSON}" | jq -r '.gpu_worker_public_ips.value[]')
+GPU_IPS=()
+while IFS= read -r ip; do
+  GPU_IPS+=("${ip}")
+done < <(echo "${OUT_JSON}" | jq -r '.gpu_worker_public_ips.value[]')
 
 INVENTORY_FILE="${ANSIBLE_DIR}/inventory/hosts.ini"
 

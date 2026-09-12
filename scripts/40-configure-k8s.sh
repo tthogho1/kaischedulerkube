@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Configure the k8s cluster (control-plane + GPU workers) with Ansible.
-# Set RUNAI=true if you also want to install Run:ai.
+# Configure the k8s cluster (control-plane + GPU workers) with Ansible,
+# then install the KAI Scheduler.
+# Set KAI=false to skip the KAI Scheduler install.
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
@@ -11,10 +12,10 @@ cd "${ANSIBLE_DIR}"
 ansible-playbook -i inventory/hosts.ini playbooks/01-control-plane.yml
 ansible-playbook -i inventory/hosts.ini playbooks/02-gpu-worker.yml
 
-if [ "${RUNAI:-false}" = "true" ]; then
-  ansible-playbook -i inventory/hosts.ini playbooks/03-runai.yml -e runai_install_enabled=true
+if [ "${KAI:-true}" = "true" ]; then
+  ansible-playbook -i inventory/hosts.ini playbooks/03-kai-scheduler.yml
 else
-  echo "RUNAI=true was not set, so the Run:ai install (03-runai.yml) was skipped."
-  echo "Once your Run:ai tenant information is ready, run:"
-  echo "  RUNAI=true ansible-playbook -i ${ANSIBLE_DIR}/inventory/hosts.ini ${ANSIBLE_DIR}/playbooks/03-runai.yml"
+  echo "KAI=false was set, so the KAI Scheduler install (03-kai-scheduler.yml) was skipped."
+  echo "To install it later, run:"
+  echo "  cd ${ANSIBLE_DIR} && ansible-playbook -i inventory/hosts.ini playbooks/03-kai-scheduler.yml"
 fi

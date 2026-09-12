@@ -1,0 +1,20 @@
+# Example GPU workload scheduled by KAI.
+# Two things are required for KAI to pick a pod up:
+#   1. spec.schedulerName: kai-scheduler
+#   2. the kai.scheduler/queue label naming a leaf queue
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-pod
+  labels:
+    kai.scheduler/queue: {{ kai_queue_name }}
+spec:
+  schedulerName: kai-scheduler
+  containers:
+    - name: main
+      image: ubuntu
+      command: ["bash", "-c"]
+      args: ["nvidia-smi; trap 'exit 0' TERM; sleep infinity & wait"]
+      resources:
+        limits:
+          nvidia.com/gpu: "1"

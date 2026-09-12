@@ -1,0 +1,17 @@
+# Example CPU-only workload scheduled by KAI.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-only-pod
+  labels:
+    kai.scheduler/queue: {{ kai_queue_name }}
+spec:
+  schedulerName: kai-scheduler
+  containers:
+    - name: main
+      image: ubuntu
+      args: ["sleep", "infinity"]
+      resources:
+        requests:
+          cpu: 100m
+          memory: 250M

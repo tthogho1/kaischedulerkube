@@ -1,0 +1,10 @@
+---
+# Installs the KAI Scheduler. No license or tenant information is needed —
+# the chart is pulled straight from the public OCI registry.
+# Set kai_install_enabled: false in group_vars/all.yml to skip it.
+
+- name: Install KAI Scheduler
+  hosts: control_plane
+  become: true
+  roles:
+    - kai_scheduler

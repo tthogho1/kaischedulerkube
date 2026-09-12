@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Prefix used for resource names/tags"
   type        = string
-  default     = "runai-k8s"
+  default     = "kai-k8s"
 }
 
 variable "availability_zone" {
