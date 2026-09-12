@@ -1,7 +1,7 @@
 services:
-  runaikube:
+  kaischedulerkube:
     build: .
-    image: runaikube-tools
+    image: kaischedulerkube-tools
     working_dir: /workspace
     environment:
       - AWS_PROFILE=k8s-handson-tf

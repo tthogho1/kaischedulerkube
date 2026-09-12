@@ -62,13 +62,13 @@ If you don't want to install terraform/ansible/aws-cli/jq directly on your machi
 
 ```powershell
 docker compose build
-docker compose run --rm runaikube
+docker compose run --rm kaischedulerkube
 ```
 
 This mounts the project directory into the container, along with `%USERPROFILE%\.aws` (read-only) and `%USERPROFILE%\.ssh`, and drops you into a bash shell at `/workspace` with `terraform`, `ansible-playbook`, `aws`, and `jq` ready to use. All commands under [Usage](#usage) below are run inside this shell.
 
 - Set your AWS profile name in the `AWS_PROFILE` environment variable in `docker-compose.yml` (defaults to `k8s-handson-tf`).
-- If your SSH key isn't named `id_rsa`, set `SSH_PRIVATE_KEY=/root/.ssh/<keyname>` (see `scripts/common.sh`) before running the scripts, or add it to `docker-compose.yml`.
+- If your private key doesn't match your `public_key_path` (default `id_rsa`), set `SSH_PRIVATE_KEY=/root/.ssh/<keyname>` (see `scripts/common.sh`) before running the scripts, or add it to `docker-compose.yml`.
 - SSH keys are copied from the read-only mount into `/root/.ssh` inside the container and re-chmod'ed on startup, since bind-mounted files from Windows don't carry the strict permissions `ssh`/`ansible` require.
 
 ## Usage

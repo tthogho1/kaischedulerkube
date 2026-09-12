@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TF_DIR="${ROOT_DIR}/terraform"
 ANSIBLE_DIR="${ROOT_DIR}/ansible"
 
-SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY:-$HOME/.ssh/k8s-handson.pem}"
+SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY:-$HOME/.ssh/id_rsa}"
 
 require_cmd() {
   for cmd in "$@"; do
