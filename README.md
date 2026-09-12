@@ -28,6 +28,34 @@ The following must be installed on the machine you run these scripts from (bash 
 - ansible / ansible-playbook
 - jq
 
+### AWS IAM permissions
+
+The credentials/profile you configure need permission to manage EC2 and VPC
+resources — this project only creates a VPC, subnet, internet gateway, route
+table, security group, key pair, and two EC2 instances, so the AWS managed
+policy `AmazonEC2FullAccess` is sufficient. There is no S3, IAM, or EKS access
+required.
+
+### AWS EC2 service quota (GPU instances)
+
+New/unused AWS accounts default to a **0 vCPU quota** for "Running On-Demand
+G and VT instances" (quota code `L-DB2E81BA`), which covers the `g4dn.xlarge`
+GPU worker. `terraform apply` will fail with a `VcpuLimitExceeded` error until
+this is raised to at least `4 * gpu_worker_count`.
+
+Check your current quota:
+
+```bash
+aws service-quotas get-service-quota --service-code ec2 --quota-code L-DB2E81BA --region <your-region>
+```
+
+If it's below what you need, request an increase (approval is usually
+automatic, but can take from minutes to a day):
+
+```bash
+aws service-quotas request-service-quota-increase --service-code ec2 --quota-code L-DB2E81BA --desired-value 8 --region <your-region>
+```
+
 ### Running via Docker (Windows / Docker Desktop)
 
 If you don't want to install terraform/ansible/aws-cli/jq directly on your machine (e.g. on Windows), a `Dockerfile` and `docker-compose.yml` are provided with everything pre-installed.
