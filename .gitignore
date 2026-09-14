@@ -22,3 +22,6 @@ id_rsa.pub
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Claude Code instructions
+CLAUDE.md

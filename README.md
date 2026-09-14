@@ -129,6 +129,16 @@ kubectl apply -f ~/kai-examples/gpu-pod.yaml
 kubectl logs gpu-pod          # should print nvidia-smi output
 ```
 
+A third example, `web-app.yaml`, pairs a pod with a Service — a minimal template for anything that needs to be reached over the network:
+
+```bash
+kubectl apply -f ~/kai-examples/web-app.yaml
+kubectl get pod web-app -o wide
+curl http://$(cd terraform && terraform output -raw control_plane_public_ip):30080
+```
+
+It's an `nginx` pod (`kai.scheduler/queue` + `schedulerName: kai-scheduler`, same as the other examples) plus a `NodePort` Service on port `30080`, which falls inside the NodePort range (`30000-32767`) already opened in the security group — so it's reachable from your machine without any extra port-forwarding. Adjust `targetPort`/`image`/`resources` for your own workload; add `nodeSelector`/`affinity` if it needs to land on a specific node (e.g. the GPU worker).
+
 Don't submit workloads into the `kai-scheduler` namespace itself — use your own namespace.
 
 Minimal pod spec:
@@ -173,5 +183,5 @@ KAI allocates resources through a hierarchy of queues; workloads always attach t
 
 - `ssh_allowed_cidr` defaults to `0.0.0.0/0`. For real use, restrict it to your own IP.
 - Pin `kai_scheduler_version` to a release from the [releases page](https://github.com/NVIDIA/KAI-Scheduler/releases); the default here is `v0.17.1`.
-- GPU sharing (fractional GPUs, `kai_gpu_sharing_enabled: true`) expects the NVIDIA GPU Operator. This setup installs the plain NVIDIA device plugin instead, which handles whole-GPU requests only.
+- GPU sharing (fractional GPUs, `kai_gpu_sharing_enabled: true`) uses KAI Scheduler's own reservation-pod mechanism, not the NVIDIA GPU Operator's time-slicing — no operator needed. It relies on the `nvidia` `RuntimeClass` object the `kai_scheduler` role applies; see `~/kai-examples/gpu-shared-pod.yaml` on the control plane for a working example using the `gpu-fraction` pod annotation.
 - The control plane is a single-node setup (not highly available).

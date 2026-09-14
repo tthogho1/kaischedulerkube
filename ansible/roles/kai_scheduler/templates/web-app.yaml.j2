@@ -1,0 +1,37 @@
+# Example web app scheduled by KAI, exposed via a NodePort Service.
+# Two things are required for KAI to pick the pod up:
+#   1. spec.schedulerName: kai-scheduler
+#   2. the kai.scheduler/queue label naming a leaf queue
+# nodePort 30080 is inside the security group's open NodePort range
+# (30000-32767), so it's reachable at http://<node-public-ip>:30080.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-app
+  labels:
+    app: web-app
+    kai.scheduler/queue: {{ kai_queue_name }}
+spec:
+  schedulerName: kai-scheduler
+  containers:
+    - name: nginx
+      image: nginx:stable
+      ports:
+        - containerPort: 80
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128M
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app
+spec:
+  type: NodePort
+  selector:
+    app: web-app
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080

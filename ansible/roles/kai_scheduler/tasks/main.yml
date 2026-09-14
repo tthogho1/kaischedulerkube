@@ -46,6 +46,27 @@
   register: clusterpolicy_crd_apply
   changed_when: "'created' in clusterpolicy_crd_apply.stdout or 'configured' in clusterpolicy_crd_apply.stdout"
 
+- name: Copy RuntimeClass manifest (nvidia)
+  copy:
+    src: runtimeclass-nvidia.yaml
+    dest: /tmp/runtimeclass-nvidia.yaml
+    mode: "0644"
+
+# GPU sharing needs this even without the GPU Operator: KAI's admission
+# webhook injects spec.runtimeClassName: nvidia into GPU pods (and the
+# binder's reservation pods use it too, for NVML access), and the API server
+# rejects any pod referencing a RuntimeClass object that doesn't exist. The
+# nvidia_gpu role already registered "nvidia" as a containerd runtime handler
+# (and made it the default), so this just exposes that handler as a
+# Kubernetes API object of the same name.
+- name: Apply RuntimeClass so KAI's admission-injected runtimeClassName resolves
+  become_user: "{{ ansible_user }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+  command: kubectl apply -f /tmp/runtimeclass-nvidia.yaml
+  register: runtimeclass_apply
+  changed_when: "'created' in runtimeclass_apply.stdout or 'configured' in runtimeclass_apply.stdout"
+
 # The chart is published as an OCI artifact, so no `helm repo add` is needed.
 - name: Install KAI Scheduler via Helm
   become_user: "{{ ansible_user }}"
@@ -104,3 +125,5 @@
   loop:
     - cpu-only-pod.yaml
     - gpu-pod.yaml
+    - gpu-shared-pod.yaml
+    - web-app.yaml

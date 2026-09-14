@@ -1,0 +1,19 @@
+# Example GPU-sharing workload scheduled by KAI (requires kai_gpu_sharing_enabled: true).
+# Unlike gpu-pod.yaml, this requests a GPU *fraction* via annotation, not
+# resources.limits."nvidia.com/gpu" — KAI's own sharing mechanism (reservation
+# pods + CUDA env injection), not the GPU Operator's time-slicing plugin.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-shared-pod
+  labels:
+    kai.scheduler/queue: {{ kai_queue_name }}
+  annotations:
+    gpu-fraction: "0.5"
+spec:
+  schedulerName: kai-scheduler
+  containers:
+    - name: main
+      image: ubuntu
+      command: ["bash", "-c"]
+      args: ["nvidia-smi; trap 'exit 0' TERM; sleep infinity & wait"]

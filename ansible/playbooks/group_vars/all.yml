@@ -18,9 +18,11 @@ kai_scheduler_version: "v0.20.1"          # see https://github.com/kai-scheduler
 # k8s 1.29.15 API server rejects (estimated rule cost exceeds budget); v0.20.1
 # replaced that custom CRD with a simpler vendored Kueue topology CRD.
 kai_scheduler_namespace: "kai-scheduler"
-# GPU sharing (fractional GPUs). Needs the NVIDIA GPU Operator, not just the
-# device plugin, so it is off by default in this setup.
-kai_gpu_sharing_enabled: false
+# GPU sharing (fractional GPUs via KAI's own reservation-pod mechanism, not
+# the GPU Operator's time-slicing). Needs the "nvidia" RuntimeClass object
+# the kai_scheduler role applies (roles/kai_scheduler/files/runtimeclass-nvidia.yaml)
+# so KAI's admission-injected runtimeClassName resolves; no GPU Operator required.
+kai_gpu_sharing_enabled: true
 kai_helm_timeout: "10m"
 # Every pod needs a leaf queue; these give a ready-to-use unlimited one.
 kai_create_default_queues: true

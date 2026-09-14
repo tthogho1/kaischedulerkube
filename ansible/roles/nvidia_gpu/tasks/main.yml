@@ -47,9 +47,20 @@
     update_cache: true
 
 - name: Configure the NVIDIA runtime for containerd
-  command: nvidia-ctk runtime configure --runtime=containerd
+  # --set-as-default is required: without it, containerd keeps using plain
+  # runc for every pod (including the NVIDIA device plugin DaemonSet itself,
+  # since nothing here defines a RuntimeClass or sets runtimeClassName), so
+  # no pod ever gets /dev/nvidia* or libnvidia-ml.so mounted and the device
+  # plugin silently registers zero GPUs even though it stays Running.
+  command: nvidia-ctk runtime configure --runtime=containerd --set-as-default
   register: nvidia_ctk_configure
-  changed_when: "'Wrote' in nvidia_ctk_configure.stdout or 'wrote' in nvidia_ctk_configure.stdout"
+  # Always report changed: nvidia-ctk's success output varies across versions
+  # (older versions log "Wrote ..."; 1.20.0 only logs INFO/ERRO lines with no
+  # such marker), so string-matching stdout is unreliable and previously
+  # caused this task to report "ok" and silently skip the containerd restart
+  # below, leaving containerd running with the old (runc-default) config even
+  # though the on-disk config was correct.
+  changed_when: true
   notify: restart containerd
 
 - meta: flush_handlers
